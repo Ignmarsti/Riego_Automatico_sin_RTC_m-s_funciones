@@ -25,9 +25,7 @@ char teclas [filas][columnas] ={
 byte pinesFilas [filas] = {11, 10, 9, 8};//Definimos los pines correspondientes a las filas del teclado matricial
 byte pinesColumnas [columnas] = {7, 6, 5, 4};//Definimos los pines correspondientes a las filas del teclado matricial
 char tecla_pulsada;
-char horariego1[6];
-char horariego2[6];
-char horariego3[6];
+
 
 byte ano,mes,dia,hora,minuto,segundo;
 char fecha[] = ("  :  :  ");
@@ -41,6 +39,13 @@ const int Rc = 10;       //Resistencia calibracion en KΩ
 int V;
 int ilum;
 
+char horariego1[6];
+char horariego2[6];
+char horariego3[6];
+
+int horariego1_entero[3];
+int horariego2_entero[3];
+int horariego2_entero[3];
 
 int i=0;
 int tecla_numerica;
@@ -96,12 +101,16 @@ void setup() {
   //rtc.adjust(DateTime(2021, 02, 17, 19, 44, 00));
 
 
-  menu_principal();
+  //menu_principal();
 
  
 }
  
 void loop() {
+
+    if(menu){
+        menu_principal();
+    }
     
 //    dht.read(TipoSensor, pinsensorT);
     
@@ -116,23 +125,34 @@ void loop() {
     opcion_seleccionada=tecla_pulsada;//La guardamos en una nueva variable
     //Tenemos varias opciones
     if(opcion_seleccionada == 'A'){
-      opcion_a();
-      bandera_seleccion=1;
+      //opcion_a();
+      //bandera_seleccion=1;
+      programar_hora(horariego1_entero);///Llamamos a la función de programar las horas
+      opcion_seleccionada = '\0';////Borramos la variable guardada en opcion_seleccionada
+      error=false;
     }
     if(opcion_seleccionada == 'B'){
-      opcion_b();
-      bandera_seleccion=1;
+      //opcion_b();
+      //bandera_seleccion=1;
+      programar_hora(horariego2_entero);
+      opcion_seleccionada = '\0';
+      error = false;
     }
     if(opcion_seleccionada == 'C'){
-      opcion_c();
-      bandera_seleccion=1;
+      //opcion_c();
+      //bandera_seleccion=1;
+      programar_hora(horariego3_entero);
+      opcion_seleccionada = '\0';
+      error = false;
     }
     if(opcion_seleccionada== 'D'){
-      bandera_seleccion=1;
+      //bandera_seleccion=1;
+      opcion_seleccionada = '\0';
       ver_fecha();
     }
     if(opcion_seleccionada== '#'){
-      bandera_seleccion=1;
+      //bandera_seleccion=1;
+      opcion_seleccionada = '\0';
       opcion_sensado();
     }
 
@@ -141,7 +161,7 @@ void loop() {
 }
 
 //Aquí tenemos las distintas funciones en las que podemos programar la hora de riego
-void opcion_a(){
+/*void opcion_a(){
     if(bandera_seleccion==1){
 
 
@@ -363,7 +383,7 @@ void opcion_c(){
 
     }
 }
-}
+}*/
 
 void menu_principal(){
 
@@ -532,4 +552,90 @@ void tecla_no_numerica(){
   escribir_texto(0, 0, "ERROR", 1);
   escribir_texto(0, 10, "La tecla pulsada no es numerica", 1);
 
+}
+
+void programar_horarios(int horario[3]){//Recibiremos 3 numeros enteros
+    int horario_anterior[3] = {horario[0], horario[1], horario[2]};
+    display.clearDisplay();
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("Opcion ");
+    display.print(opcion_seleccionada);
+    display.println(" seleccionada");
+    display.display();
+    programar_hora(horario);
+    if(error){
+        horario[0] = horario_anterior[0];
+        horario[1] = horario_anterior[1];
+        horario[2] = horario_anterior[2];
+    }
+    String Hora_final = "";
+    
+    ///////------------------ME FALTA AQUÍ RECONSTRUIR LA HORA FINAL---------/////
+
+    display.clearDisplay();
+    escribir_texto(15, 0, "Se ha programado", 1);
+    escribir_texto(9, 9, "la hora de riego: ", 1);
+    escribir_texto(40, 18, Hora_final, 1);
+    delay(2000);
+    display.clearDisplay();
+    display.display();
+    menu = true;
+}
+
+void programar_hora(int horario_temporal[3]){
+    String Hora = reunir_informacion(24, 0, 9, ":");///Recolectamos la información acerca de la hora
+    if(Hora="invalido"){
+        Invalido();
+        error = true;
+        menu = true;
+    }
+    String Minutos = reunir_informacion(60, 21, 9, ":");//Recolectamos información acerca de los minutos
+    if(Minutos = "invalido"){
+        Invalido();
+        error = true;
+        menu = true;
+    }
+    String Segundos = reunir_informacion(60, 42, 9, ":");//Recolectamos inforamción acerca de los segundos
+    if(Segundos = "invalido"){
+        Invalido();
+        error = true;
+        menu = true;
+    }
+    horario_temporal[0] = Hora.toInt();
+    horario_temporal[1] = Minutos.toInt();
+    horario_temporal[2] = Segundos.toInt();
+
+}
+
+String reunir_informacion(int limite, int coordenada_x, int coordenada_y, String separador){
+    String buf;
+    char T_pulsada = '\0';
+    for (int j=0; j<2; j++){
+        T_pulsada = teclado.waitForKey();
+        if(isDigit(T_pulsada) && T_pulsada != '*' && T_pulsada != '#'){///Comprobamos que se haya introducido carácteres válidos
+            escribir_texto(coordenada_x, coordenada_y, String (T_pulsada), 1);
+            buf +=T_pulsada;
+            coordenada_x += 7;///Para que no se vaya pisando lo que escribimos por pantalla.
+        }
+        else{
+            j=2;//No recolectamos más datos
+            return "invalido";///Indicamos que no es válido lo introducido
+        }
+    }
+    int numero_completo = buf.toInt();///Convertimos el numero almacenado como string en int
+    if(numero>=limite){///Comprobamos que el numero introducido no sea mayor que el límite
+        return "invalido";
+    }
+    else{
+        escribir_texto(coordenada_x, coordenada_y, separador, 1);///Escribimos el separador :
+        return buf;
+    }
+}
+
+void Invalido(){
+    display.clearDisplay();
+    escribir_texto(40, 0, "INVALIDO", 1);
+    delay(1000);
 }
